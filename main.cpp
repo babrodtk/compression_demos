@@ -19,6 +19,7 @@
   ***/
 
 #include "LZW.h"
+#include "Huffman.h"
 
 #include <iostream>
 #include <iomanip>
@@ -41,10 +42,10 @@ int main(int argc, char** argv) {
     std::vector<unsigned char> input(shakespeare_data, shakespeare_data+shakespeare_data_size);
 
     //Compress it
-    std::vector<unsigned char> compressed = lzw_compress(input);
+    std::vector<unsigned char> compressed = huffman_compress(input);
 
     //Decompress it
-    std::vector<unsigned char> decompressed = lzw_decompress(compressed);
+    std::vector<unsigned char> decompressed = huffman_decompress(compressed);
 
     //Compare original with decompressed
     if (input.size() != decompressed.size()) {
@@ -66,7 +67,7 @@ int main(int argc, char** argv) {
     }
 
     std::cout << "Original size:   " << input.size() << " bytes." << std::endl;
-    std::cout << "Compressed size: " << compressed.size() << " bytes (" << compressed.size() / static_cast<double>(input.size()) << "%)." << std::endl;
+    std::cout << "Compressed size: " << compressed.size() << " bytes (" << 100*compressed.size() / input.size() << "%)." << std::endl;
     std::cout << "Input equal output: Success!" << std::endl;
 
     return 0;

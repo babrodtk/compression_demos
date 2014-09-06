@@ -49,6 +49,9 @@ public:
         }
     }
 
+    /**
+      * Adds w_ to the dictionary using the next unused symbol
+      */
     inline void addStringToDict(const std::vector<unsigned char>& w_) {
         lzw_code value = m_next_code;
         std::pair<std::vector<unsigned char>, lzw_code> entry(w_, value);
@@ -84,7 +87,10 @@ public:
             addStringToDict(key);
         }
     }
-
+    
+    /**
+      * Adds w_ to the dictionary using the next unused symbol
+      */
     inline void addStringToDict(const std::vector<unsigned char>& w_) {
         lzw_code value = m_next_code;
         std::pair<lzw_code, std::vector<unsigned char>> entry(value, w_);
@@ -113,7 +119,10 @@ private:
 class LZWOutput {
 public:
     LZWOutput() : m_num_elements_written(0) {}
-
+    
+    /**
+      * Adds the code to the output character buffer
+      */
     inline void appendCode(lzw_code c) {
         if (m_num_elements_written % 2 == 0) {
             unsigned char low = c & 0x00FF; //First 8 bits
@@ -147,6 +156,9 @@ class LZWInput {
 public:
     LZWInput(const std::vector<unsigned char>& data_) : m_num_elements_read(0), m_data(data_), m_even(true) {}
 
+    /**
+      * Reads the next code from the character buffer
+      */
     inline lzw_code readCode() {
         if (m_even) {
             lzw_code low = m_data[m_num_elements_read++];
@@ -232,6 +244,7 @@ std::vector<unsigned char> lzw_decompress(const std::vector<unsigned char>& inpu
     while(input.hasMoreData()) {
         lzw_code next_code = input.readCode();
 
+        //If next_code is in the dictionary, write out
         if (dict.hasCode(next_code)) {
             std::vector<unsigned char> k = dict.getString(next_code);
             output.insert(output.end(), k.begin(), k.end());
@@ -240,6 +253,7 @@ std::vector<unsigned char> lzw_decompress(const std::vector<unsigned char>& inpu
             dict.addStringToDict(wk);
             w = k;
         }
+        //Otherwise, deduce what the next_code is
         else {
             std::vector<unsigned char> k = dict.getString(code);
             unsigned char k_start = k[0];
