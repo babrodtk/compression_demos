@@ -1,7 +1,7 @@
 // Original source of data http://shakespeare.mit.edu/
 // Released as public domain.
 
-extern const unsigned char shakespeare_data[] = 
+extern const unsigned char test_data[] = 
 "SCENE I. Dunsinane. Ante-room in the castle.\
 \
     Enter a Doctor of Physic and a Waiting-Gentlewoman \
@@ -183,4 +183,4 @@ Gentlewoman\
     Exeunt\
 ";
 
-extern const unsigned int shakespeare_data_size = sizeof(shakespeare_data) / sizeof(shakespeare_data[0]);
+extern const unsigned int test_data_size = sizeof(test_data) / sizeof(test_data[0]);

@@ -231,7 +231,7 @@ std::vector<unsigned char> huffman_compress(const std::vector<unsigned char>& da
     //Now loop through the map and create a priority queue containing all characters
     std::priority_queue<HuffmanNode*, std::vector<HuffmanNode*>, HuffmanNodeComparator > queue;
     std::vector<std::shared_ptr<HuffmanLeafNode> > leaf_nodes(frequencies.size());
-    unsigned char num_characters = 0;
+    unsigned int num_characters = 0;
     for (size_t i=0; i<frequencies.size(); ++i) {
         unsigned char c = i;
         if (frequencies[i] > 0) {
@@ -262,7 +262,7 @@ std::vector<unsigned char> huffman_compress(const std::vector<unsigned char>& da
 
     //Write the symbol table to the character buffer
     std::vector<unsigned char> output;
-    output.push_back(num_characters);
+    output.push_back(num_characters-1);
     for (size_t i=0; i<leaf_nodes.size(); ++i) {
         std::shared_ptr<HuffmanLeafNode> node = leaf_nodes[i];
         if (node) {
@@ -283,6 +283,12 @@ std::vector<unsigned char> huffman_compress(const std::vector<unsigned char>& da
         }
     }
 
+    //Write out number of uncompressed bytes so the decoder knows when to stop
+    uint64_t num_bytes = data_.size();
+    unsigned char* num_bytes_ptr = reinterpret_cast<unsigned char*>(&(num_bytes));
+    for (size_t j=0; j<8; ++j) {
+        output.push_back(num_bytes_ptr[j]);
+    }
     
     //Now traverse text, and replace chars with symbols and write to output
     unsigned int bit_index = 0;
@@ -304,7 +310,7 @@ std::vector<unsigned char> huffman_decompress(const std::vector<unsigned char>& 
     non_leaf_nodes.push_back(root);
     
     //Read the symbol table
-    size_t num_characters = data_[offset++];
+    size_t num_characters = data_[offset++]+1;
     std::vector<std::shared_ptr<HuffmanLeafNode> > leaf_nodes(256);
     for (size_t i=0; i<num_characters; ++i) {
         unsigned char character = data_[offset++];
@@ -354,16 +360,29 @@ std::vector<unsigned char> huffman_decompress(const std::vector<unsigned char>& 
         }
     }
 
+    //Read number of uncompressed bytes so the decoder knows when to stop
+    uint64_t num_bytes = 0;
+    unsigned char* num_bytes_ptr = reinterpret_cast<unsigned char*>(&(num_bytes));
+    for (size_t j=0; j<8; ++j) {
+        num_bytes_ptr[j] = data_[offset++];
+    }
+
     //Now that we have the tree, lets traverse it as we decompress our data
     std::vector<unsigned char> output;
     unsigned int bit_index = 0;
     unsigned char byte = 0;
-    while (offset < data_.size()) {
+    while (output.size() < num_bytes) {
+        //If we don't have any more data, we have to abort.
+        //However, this should never happen
+        if (offset == data_.size() && bit_index == 0) {
+            break;
+        }
+
         HuffmanNode* node = root.get();
 
         //Decode one symbol
         for (;;) {
-            if (bit_index == 0) {
+            if (bit_index == 0 && offset < data_.size()) {
                 byte = data_[offset++];
             }
 

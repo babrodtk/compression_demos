@@ -42,6 +42,10 @@ inline bool operator<(const std::vector<unsigned char>& lhs, const std::vector<u
 class LZWCompressingDictionary {
 public:
     LZWCompressingDictionary() : m_next_code(0) {
+        init();
+    }
+
+    inline void init() {
         //Initialize dictionary with first 256 values
         for (unsigned int i=0; i<256; ++i) {
             std::vector<unsigned char> key(1, i);
@@ -53,6 +57,12 @@ public:
       * Adds w_ to the dictionary using the next unused symbol
       */
     inline void addStringToDict(const std::vector<unsigned char>& w_) {
+        //Reset dictionary if over-reaching 12 bits
+        if (m_next_code == 4096) {
+            m_dict.clear();
+            m_next_code = 0;
+            init();
+        }
         lzw_code value = m_next_code;
         std::pair<std::vector<unsigned char>, lzw_code> entry(w_, value);
         m_dict.insert(entry);
@@ -81,6 +91,10 @@ private:
 class LZWDecompressingDictionary {
 public:
     LZWDecompressingDictionary() : m_next_code(0) {
+        init();
+    }
+
+    inline void init() {
         //Initialize dictionary with first 256 values
         for (unsigned int i=0; i<256; ++i) {
             std::vector<unsigned char> key(1, i);
@@ -92,6 +106,12 @@ public:
       * Adds w_ to the dictionary using the next unused symbol
       */
     inline void addStringToDict(const std::vector<unsigned char>& w_) {
+        //Reset dictionary if over-reaching 12 bits
+        if (m_next_code == 4096) {
+            m_dict.clear();
+            m_next_code = 0;
+            init();
+        }
         lzw_code value = m_next_code;
         std::pair<lzw_code, std::vector<unsigned char>> entry(value, w_);
         m_dict.insert(entry);
