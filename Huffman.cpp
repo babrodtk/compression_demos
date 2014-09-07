@@ -145,6 +145,9 @@ inline std::vector<unsigned int> findCharacterFrequency(const std::vector<unsign
     return frequencies;
 }
 
+/**
+  * Function which traverses a Huffman tree, and adds the symbols/codes
+  */
 inline void traverseTree(HuffmanNode* root) {
     HuffmanLeafNode* leaf = dynamic_cast<HuffmanLeafNode*>(root);
     
@@ -159,6 +162,9 @@ inline void traverseTree(HuffmanNode* root) {
     }
 }
 
+/**
+  * Function which writes a huffman symbol to a buffered output
+  */
 void writeHuffmanSymbol(std::vector<unsigned char>& output_, unsigned int& bit_index_, const HuffmanSymbol& symbol_) {
     const unsigned char bit_masks[] = {
         1,
@@ -215,6 +221,9 @@ void writeHuffmanSymbol(std::vector<unsigned char>& output_, unsigned int& bit_i
     }
 }
 
+/**
+  * Function which compresses data using Huffman lossless compression
+  */
 std::vector<unsigned char> huffman_compress(const std::vector<unsigned char>& data_) {
     //First, find the actual frequency of each character in the stream
     std::vector<unsigned int> frequencies = findCharacterFrequency(data_);
@@ -285,6 +294,9 @@ std::vector<unsigned char> huffman_compress(const std::vector<unsigned char>& da
     return output;
 }
 
+/**
+  * Function which decompresses a Huffman encoded vector
+  */
 std::vector<unsigned char> huffman_decompress(const std::vector<unsigned char>& data_) {
     size_t offset = 0;
     std::shared_ptr<HuffmanNode> root(new HuffmanNode());
