@@ -44,14 +44,16 @@ public:
 
     HuffmanSymbol rightChild() {
         HuffmanSymbol child;
-        child.m_symbol = (m_symbol << 1) + 1;
+        child.m_symbol = m_symbol;
+        child.m_symbol = child.m_symbol + (1 << m_symbol_width);
         child.m_symbol_width = m_symbol_width + 1;
         return child;
     }
 
     HuffmanSymbol leftChild() {
         HuffmanSymbol child;
-        child.m_symbol = m_symbol << 1;
+        child.m_symbol = m_symbol;
+        child.m_symbol = child.m_symbol;
         child.m_symbol_width = m_symbol_width + 1;
         return child;
     }
@@ -269,8 +271,6 @@ std::vector<unsigned char> huffman_compress(const std::vector<unsigned char>& da
             for (size_t j=0; j*8<symbol_width; ++j) {
                 output.push_back(symbol[j]);
             }
-
-            std::cout << character << "=" << node->m_symbol.m_symbol << "(" << node->m_symbol.m_symbol_width << ")" << std::endl;
         }
     }
 
@@ -290,8 +290,6 @@ std::vector<unsigned char> huffman_decompress(const std::vector<unsigned char>& 
     std::shared_ptr<HuffmanNode> root(new HuffmanNode());
     std::vector<std::shared_ptr<HuffmanNode> > non_leaf_nodes;
     non_leaf_nodes.push_back(root);
-
-    std::cout << "\n\n";
     
     //Read the symbol table
     size_t num_characters = data_[offset++];
@@ -305,16 +303,12 @@ std::vector<unsigned char> huffman_decompress(const std::vector<unsigned char>& 
         for (size_t j=0; j*8<symbol_width; ++j) {
             symbol_ptr[j] = data_[offset++];
         }
-        
-        //std::cout << character << "=" << symbol << std::endl;
-        std::cout << character << "=" << symbol << "=>";
 
         //Now loop through the symbol, and create all non-leaf nodes
         HuffmanNode* node = root.get();
-        for (unsigned char j=1; j<symbol_width; ++j) {
+        for (unsigned char j=0; j<symbol_width-1; ++j) {
             //1 signifies right child
-            if ((symbol >> (symbol_width-j)) & 1) {
-                std::cout << "1";
+            if ((symbol >> j) & 1) {
                 if (!node->m_right) {
                     std::shared_ptr<HuffmanNode> child(new HuffmanNode());
                     non_leaf_nodes.push_back(child);
@@ -324,7 +318,6 @@ std::vector<unsigned char> huffman_decompress(const std::vector<unsigned char>& 
             }
             //0 signifies left
             else {
-                std::cout << "0";
                 if (!node->m_left) {
                     std::shared_ptr<HuffmanNode> child(new HuffmanNode());
                     non_leaf_nodes.push_back(child);
@@ -335,21 +328,18 @@ std::vector<unsigned char> huffman_decompress(const std::vector<unsigned char>& 
         }
 
         //Finally, add the leaf node
-        if (symbol & 1) {
-            std::cout << "1:";
+        if ((symbol >> (symbol_width-1)) & 1) {
             std::shared_ptr<HuffmanLeafNode> child(new HuffmanLeafNode(character));
             child->m_symbol.m_symbol = symbol;
             leaf_nodes.push_back(child);
             node->m_right = child.get();
         }
         else {
-            std::cout << "0:";
             std::shared_ptr<HuffmanLeafNode> child(new HuffmanLeafNode(character));
             child->m_symbol.m_symbol = symbol;
             leaf_nodes.push_back(child);
             node->m_left = child.get();
         }
-        std::cout << std::endl;
     }
 
     //Now that we have the tree, lets traverse it as we decompress our data
@@ -366,7 +356,7 @@ std::vector<unsigned char> huffman_decompress(const std::vector<unsigned char>& 
             }
 
             //Right child
-            if ((byte >> (7-bit_index)) & 1) {
+            if ((byte >> bit_index) & 1) {
                 node = node->m_right;
             }
             //Left child
@@ -378,12 +368,11 @@ std::vector<unsigned char> huffman_decompress(const std::vector<unsigned char>& 
 
             HuffmanLeafNode* leaf = dynamic_cast<HuffmanLeafNode*>(node);
             if (leaf) {
-                std::cout << leaf->m_char;
                 output.push_back(leaf->m_char);
                 break;
             }
         }
     }
 
-    return data_;
+    return output;
 }
