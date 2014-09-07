@@ -42,26 +42,31 @@ int main(int argc, char** argv) {
     std::vector<unsigned char> input(shakespeare_data, shakespeare_data+shakespeare_data_size);
 
     //Compress it
-    std::vector<unsigned char> compressed = huffman_compress(input);
+    std::vector<unsigned char> huff_compressed = huffman_compress(input);
+    std::vector<unsigned char> lzw_compressed = lzw_compress(huff_compressed);
 
     //Decompress it
-    std::vector<unsigned char> decompressed = huffman_decompress(compressed);
+    std::vector<unsigned char> lzw_decompressed = lzw_decompress(lzw_compressed);
+    std::vector<unsigned char> huff_decompressed = huffman_decompress(lzw_decompressed);
+
+    std::vector<unsigned char>& output = huff_decompressed;
+    std::vector<unsigned char>& compressed = lzw_compressed;
 
     //Compare original with decompressed
-    if (input.size() != decompressed.size()) {
+    if (input.size() != output.size()) {
         std::cerr << "Input and output sizes do not match!" << std::endl;
         std::cerr << "Input:  " << input << std::endl;
-        std::cerr << "Output: " << decompressed << std::endl;
+        std::cerr << "Output: " << output << std::endl;
         std::cerr << "Input and output sizes do not match!" << std::endl;
         exit(-1);
     }
 
     for (size_t i=0; i<input.size(); ++i) {
-        if (input[i] != decompressed[i]) {
-            std::cerr << "At position " << i << " I got " << std::hex << decompressed[i] << ", but expected " << std::hex << input[i] << std::endl;
+        if (input[i] != output[i]) {
+            std::cerr << "At position " << i << " I got " << std::hex << output[i] << ", but expected " << std::hex << input[i] << std::endl;
             std::cerr << "Input:  " << input << std::endl;
-            std::cerr << "Output: " << decompressed << std::endl;
-            std::cerr << "At position " << i << " I got " << std::hex << decompressed[i] << ", but expected " << std::hex << input[i] << std::endl;
+            std::cerr << "Output: " << output << std::endl;
+            std::cerr << "At position " << i << " I got " << std::hex << output[i] << ", but expected " << std::hex << input[i] << std::endl;
             exit(-1);
         }
     }

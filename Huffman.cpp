@@ -45,7 +45,7 @@ public:
     HuffmanSymbol rightChild() {
         HuffmanSymbol child;
         child.m_symbol = m_symbol;
-        child.m_symbol = child.m_symbol + (1 << m_symbol_width);
+        child.m_symbol = child.m_symbol + (1ull << m_symbol_width);
         child.m_symbol_width = m_symbol_width + 1;
         return child;
     }
