@@ -23,6 +23,7 @@
 #include <queue>
 #include <iostream>
 #include <cstdint>
+#include <cassert>
 #include <memory>
 
 /**
@@ -64,9 +65,10 @@ public:
   */
 class HuffmanNode {
 public:
+    HuffmanNode() : m_count(0), m_right(nullptr), m_left(nullptr), m_symbol() {}
+
     HuffmanNode(unsigned int count_, HuffmanNode* right_, HuffmanNode* left_) 
-        : m_count(count_), m_right(right_), m_left(left_), 
-        m_symbol(0, 0) {
+        : m_count(count_), m_right(right_), m_left(left_), m_symbol() {
     }
 
     HuffmanNode(HuffmanNode&& rhs) {
@@ -171,7 +173,7 @@ void writeHuffmanSymbol(std::vector<unsigned char>& output_, unsigned int& bit_i
     uint64_t bits = symbol_.m_symbol;
 
     while (bits_left) {
-        unsigned int bits_written = 0;
+        int bits_written = 0;
 
         //Do we have to allocate more memory?
         if (bit_index_ == 0) {
@@ -181,7 +183,7 @@ void writeHuffmanSymbol(std::vector<unsigned char>& output_, unsigned int& bit_i
         //Will we fill the current byte?
         if (bit_index_+bits_left >= 8) {
             //Read from bits
-            unsigned char out = bits;
+            unsigned char out = static_cast<unsigned char>(bits);
 
             //Bit shift to align with existing bits and or
             output_.back() ^= (out << bit_index_);
@@ -191,7 +193,7 @@ void writeHuffmanSymbol(std::vector<unsigned char>& output_, unsigned int& bit_i
         }
         else {
             //Read from bits
-            unsigned char out = bits;
+            unsigned char out = static_cast<unsigned char>(bits);
 
             //Discard bits we don't own
             out &= bit_masks[bits_left];
@@ -207,7 +209,7 @@ void writeHuffmanSymbol(std::vector<unsigned char>& output_, unsigned int& bit_i
         bit_index_ = (bit_index_ + bits_written) % 8;
 
         //Discard bits written from bits
-        bits >> bits_written;
+        bits = bits >> bits_written;
     }
 }
 
@@ -218,12 +220,14 @@ std::vector<unsigned char> huffman_compress(const std::vector<unsigned char>& da
     //Now loop through the map and create a priority queue containing all characters
     std::priority_queue<HuffmanNode*, std::vector<HuffmanNode*>, HuffmanNodeComparator > queue;
     std::vector<std::shared_ptr<HuffmanLeafNode> > leaf_nodes(frequencies.size());
+    unsigned char num_characters = 0;
     for (size_t i=0; i<frequencies.size(); ++i) {
         unsigned char c = i;
         if (frequencies[i] > 0) {
             std::shared_ptr<HuffmanLeafNode> leaf(new HuffmanLeafNode(c, frequencies[i]));
             leaf_nodes[i] = leaf;
             queue.push(leaf.get());
+            ++num_characters;
         }
     }
     
@@ -247,15 +251,16 @@ std::vector<unsigned char> huffman_compress(const std::vector<unsigned char>& da
 
     //Write the symbol table to the character buffer
     std::vector<unsigned char> output;
+    output.push_back(num_characters);
     for (size_t i=0; i<leaf_nodes.size(); ++i) {
         std::shared_ptr<HuffmanLeafNode> node = leaf_nodes[i];
         if (node) {
-            unsigned char character = i;
+            unsigned char character = node->m_char;
             unsigned char symbol_width = node->m_symbol.m_symbol_width;
             unsigned char* symbol = reinterpret_cast<unsigned char*>(&(node->m_symbol.m_symbol));
 
             //Write out symbol
-            output.push_back(i);
+            output.push_back(character);
 
             //Write out symbol length
             output.push_back(symbol_width);
@@ -264,6 +269,8 @@ std::vector<unsigned char> huffman_compress(const std::vector<unsigned char>& da
             for (size_t j=0; j*8<symbol_width; ++j) {
                 output.push_back(symbol[j]);
             }
+
+            std::cout << character << "=" << node->m_symbol.m_symbol << "(" << node->m_symbol.m_symbol_width << ")" << std::endl;
         }
     }
 
@@ -278,7 +285,105 @@ std::vector<unsigned char> huffman_compress(const std::vector<unsigned char>& da
     return output;
 }
 
-
 std::vector<unsigned char> huffman_decompress(const std::vector<unsigned char>& data_) {
+    size_t offset = 0;
+    std::shared_ptr<HuffmanNode> root(new HuffmanNode());
+    std::vector<std::shared_ptr<HuffmanNode> > non_leaf_nodes;
+    non_leaf_nodes.push_back(root);
+
+    std::cout << "\n\n";
+    
+    //Read the symbol table
+    size_t num_characters = data_[offset++];
+    std::vector<std::shared_ptr<HuffmanLeafNode> > leaf_nodes(256);
+    for (size_t i=0; i<num_characters; ++i) {
+        unsigned char character = data_[offset++];
+        unsigned char symbol_width = data_[offset++];
+            assert(symbol_width < 8*8);
+        uint64_t symbol = 0;
+        unsigned char* symbol_ptr = reinterpret_cast<unsigned char*>(&symbol);
+        for (size_t j=0; j*8<symbol_width; ++j) {
+            symbol_ptr[j] = data_[offset++];
+        }
+        
+        //std::cout << character << "=" << symbol << std::endl;
+        std::cout << character << "=" << symbol << "=>";
+
+        //Now loop through the symbol, and create all non-leaf nodes
+        HuffmanNode* node = root.get();
+        for (unsigned char j=1; j<symbol_width; ++j) {
+            //1 signifies right child
+            if ((symbol >> (symbol_width-j)) & 1) {
+                std::cout << "1";
+                if (!node->m_right) {
+                    std::shared_ptr<HuffmanNode> child(new HuffmanNode());
+                    non_leaf_nodes.push_back(child);
+                    node->m_right = child.get();
+                }
+                node = node->m_right;
+            }
+            //0 signifies left
+            else {
+                std::cout << "0";
+                if (!node->m_left) {
+                    std::shared_ptr<HuffmanNode> child(new HuffmanNode());
+                    non_leaf_nodes.push_back(child);
+                    node->m_left = child.get();
+                }
+                node = node->m_left;
+            }
+        }
+
+        //Finally, add the leaf node
+        if (symbol & 1) {
+            std::cout << "1:";
+            std::shared_ptr<HuffmanLeafNode> child(new HuffmanLeafNode(character));
+            child->m_symbol.m_symbol = symbol;
+            leaf_nodes.push_back(child);
+            node->m_right = child.get();
+        }
+        else {
+            std::cout << "0:";
+            std::shared_ptr<HuffmanLeafNode> child(new HuffmanLeafNode(character));
+            child->m_symbol.m_symbol = symbol;
+            leaf_nodes.push_back(child);
+            node->m_left = child.get();
+        }
+        std::cout << std::endl;
+    }
+
+    //Now that we have the tree, lets traverse it as we decompress our data
+    std::vector<unsigned char> output;
+    unsigned int bit_index = 0;
+    unsigned char byte = 0;
+    while (offset < data_.size()) {
+        HuffmanNode* node = root.get();
+
+        //Decode one symbol
+        for (;;) {
+            if (bit_index == 0) {
+                byte = data_[offset++];
+            }
+
+            //Right child
+            if ((byte >> (7-bit_index)) & 1) {
+                node = node->m_right;
+            }
+            //Left child
+            else {
+                node = node->m_left;
+            }
+
+            bit_index = (bit_index+1) % 8;
+
+            HuffmanLeafNode* leaf = dynamic_cast<HuffmanLeafNode*>(node);
+            if (leaf) {
+                std::cout << leaf->m_char;
+                output.push_back(leaf->m_char);
+                break;
+            }
+        }
+    }
+
     return data_;
 }
