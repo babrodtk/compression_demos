@@ -26,6 +26,8 @@
 #include <cassert>
 #include <memory>
 
+namespace { //Prevent contaminating global namespace
+
 /**
   * Class which represents a Huffman (variable length) symbol
   */
@@ -220,6 +222,8 @@ void writeHuffmanSymbol(std::vector<unsigned char>& output_, unsigned int& bit_i
         bits = bits >> bits_written;
     }
 }
+
+} //Namespace
 
 /**
   * Function which compresses data using Huffman lossless compression

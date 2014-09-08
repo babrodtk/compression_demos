@@ -90,9 +90,13 @@ inline std::vector<unsigned char> readFile(std::string filename_) {
         output.resize(bytes);
         char* ptr = reinterpret_cast<char*>(&output[0]);
         size_t bytes_read = 0;
-        while (bytes_read != bytes) {
+        while (bytes_read != bytes ) {
             file.read(ptr + bytes_read, bytes-bytes_read);
-            bytes_read += file.gcount();
+            size_t bytes_read_this_iter = file.gcount();
+            bytes_read += bytes_read_this_iter;
+            if (bytes_read_this_iter == 0) {
+                break;
+            }
         }
         if (bytes_read != bytes) {
             std::cerr << "Tried reading " << bytes << " bytes from file, and got " << bytes_read << std::endl;
@@ -163,7 +167,7 @@ int main(int argc, char** argv) {
 
     //Now perform actual compression
     std::cout << "Compressing:" << std::endl;
-    std::cout << "Input: " << input.size() << " bytes";
+    std::cout << "Input: " << input.size() << " bytes" << std::endl;
     std::vector<unsigned char> data = input;
     for (size_t i=0; i<compress_ops.size(); ++i) {
         std::cout << " +" << compress_ops[i] << ":";
@@ -172,7 +176,7 @@ int main(int argc, char** argv) {
         case HUFFMAN: output = huffman_compress(data); break;
         default: output = data; break;
         }
-        std::cout << output.size() << " bytes " << std::flush;
+        std::cout << output.size() << " bytes" << std::endl;
         data = output;
     }
     std::cout << std::endl;
@@ -180,7 +184,7 @@ int main(int argc, char** argv) {
     //Then decompress
     std::reverse(compress_ops.begin(), compress_ops.end());
     std::cout << "Decompressing:" << std::endl;
-    std::cout << "Input: " << data.size() << " bytes";
+    std::cout << "Input: " << data.size() << " bytes" << std::endl;
     for (size_t i=0; i<compress_ops.size(); ++i) {
         std::cout << " -" << compress_ops[i] << ":";
         switch(compress_ops[i]) {
@@ -188,7 +192,7 @@ int main(int argc, char** argv) {
         case HUFFMAN: output = huffman_decompress(data); break;
         default: output = data; break;
         }
-        std::cout << output.size() << " bytes " << std::flush;
+        std::cout << output.size() << " bytes" << std::endl;
         data = output;
     }
     std::cout << std::endl;

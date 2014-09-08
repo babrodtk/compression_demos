@@ -26,6 +26,8 @@
 #include <cassert>
 #include <algorithm>
 
+namespace { //Avoid contaminating global namespace
+
 /**
   * An LZW code is 12 bits in our code
   */
@@ -217,6 +219,8 @@ private:
     const std::vector<unsigned char>& m_data;
     bool m_even;
 };
+
+} // Namespace
 
 /**
   * Function which compresses a character stream using LZW.
