@@ -71,11 +71,11 @@ public:
         m_next_code += 1;
     }
 
-    inline bool hasString(const std::vector<unsigned char> s) {
+    inline bool hasString(const std::vector<unsigned char>& s) {
         return (m_dict.count(s) == 1);
     }
 
-    inline lzw_code getCode(const std::vector<unsigned char> s) {
+    inline lzw_code getCode(const std::vector<unsigned char>& s) {
         assert(hasString(s));
         return m_dict[s];
     }
@@ -103,6 +103,12 @@ public:
             addStringToDict(key);
         }
     }
+
+    inline void reinit() {
+        m_dict.clear();
+        m_next_code = 0;
+        init();
+    }
     
     /**
       * Adds w_ to the dictionary using the next unused symbol
@@ -110,9 +116,7 @@ public:
     inline void addStringToDict(const std::vector<unsigned char>& w_) {
         //Reset dictionary if over-reaching 12 bits
         if (m_next_code == 4096) {
-            m_dict.clear();
-            m_next_code = 0;
-            init();
+            reinit();
         }
         lzw_code value = m_next_code;
         std::pair<lzw_code, std::vector<unsigned char>> entry(value, w_);
@@ -121,6 +125,10 @@ public:
     }
 
     inline bool hasCode(const lzw_code& c) {
+        //Bugfix? Nut 100% sure about this, but the idea
+        if (m_next_code == 4096 && c == 256) {
+            reinit();
+        }
         return (m_dict.count(c) == 1);
     }
 

@@ -26,6 +26,7 @@
 #include <iomanip>
 #include <memory>
 #include <string>
+#include <sstream>
 #include <vector>
 #include <algorithm>
 
@@ -204,14 +205,13 @@ int main(int argc, char** argv) {
         std::cerr << "Input: " << input.size() << " bytes." << std::endl;
         std::cerr << "Output: " << output.size() << " bytes." << std::endl;
         std::cerr << "Input and output sizes do not match!" << std::endl;
-        exit(-1);
     }
 
-    for (size_t i=0; i<input.size(); ++i) {
+    for (size_t i=0; i<std::min(input.size(), output.size()); ++i) {
         if (input[i] != output[i]) {
             std::cerr << "Input:  " << input << std::endl;
             std::cerr << "Output: " << output << std::endl;
-            std::cerr << "At position " << i << " I got " << std::hex << output[i] << ", but expected " << std::hex << input[i] << std::endl;
+            std::cerr << "At position " << i << " I got '" << std::hex << output[i] << "', but expected '" << std::hex << input[i] << "'" << std::endl;
             exit(-1);
         }
     }
