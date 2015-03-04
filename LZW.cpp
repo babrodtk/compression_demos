@@ -103,12 +103,6 @@ public:
             addStringToDict(key);
         }
     }
-
-    inline void reinit() {
-        m_dict.clear();
-        m_next_code = 0;
-        init();
-    }
     
     /**
       * Adds w_ to the dictionary using the next unused symbol
@@ -116,18 +110,19 @@ public:
     inline void addStringToDict(const std::vector<unsigned char>& w_) {
         //Reset dictionary if over-reaching 12 bits
         if (m_next_code == 4096) {
-            reinit();
+            m_dict.clear();
+            m_next_code = 0;
+            init();
         }
         lzw_code value = m_next_code;
-        std::pair<lzw_code, std::vector<unsigned char>> entry(value, w_);
+        std::pair<lzw_code, std::vector<unsigned char> > entry(value, w_);
         m_dict.insert(entry);
         m_next_code += 1;
     }
 
     inline bool hasCode(const lzw_code& c) {
-        //Bugfix? Nut 100% sure about this, but the idea
         if (m_next_code == 4096 && c == 256) {
-            reinit();
+            return false;
         }
         return (m_dict.count(c) == 1);
     }
