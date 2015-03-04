@@ -25,6 +25,7 @@
 #include <cstdint>
 #include <cassert>
 #include <memory>
+#include <cmath>
 
 namespace { //Prevent contaminating global namespace
 
@@ -228,7 +229,7 @@ void writeHuffmanSymbol(std::vector<unsigned char>& output_, unsigned int& bit_i
 /**
   * Function which compresses data using Huffman lossless compression
   */
-std::vector<unsigned char> huffman_compress(const std::vector<unsigned char>& data_) {
+std::vector<unsigned char> huffman_compress(const std::vector<unsigned char>& data_, bool compute_entropy_) {
     //First, find the actual frequency of each character in the stream
     std::vector<unsigned int> frequencies = findCharacterFrequency(data_);
 
@@ -263,6 +264,26 @@ std::vector<unsigned char> huffman_compress(const std::vector<unsigned char>& da
     //Traverse the tree, and add the code words for each node
     traverseTree(queue.top());
     queue.pop();
+    
+    if (compute_entropy_) {
+        //Compute entropy
+        double num_chars = 0.0;
+        double theor_entr = 0.0;
+        double entr = 0.0f;
+        for (size_t i=0; i<frequencies.size(); ++i) {
+            num_chars += frequencies[i];
+        }
+        for (size_t i=0; i<frequencies.size(); ++i) {
+            if (frequencies[i] > 0) {
+                double freq = frequencies[i] / num_chars;
+                entr += freq * leaf_nodes[i]->m_symbol.m_symbol_width;
+                theor_entr += -freq * log(freq) / log(2.0);
+            }
+        }
+        std::cout << "Number of characters:" << num_characters << std::endl;
+        std::cout << "Weighted path length: " << entr << std::endl;
+        std::cout << "Entropy" << theor_entr << std::endl;
+    }
 
     //Write the symbol table to the character buffer
     std::vector<unsigned char> output;

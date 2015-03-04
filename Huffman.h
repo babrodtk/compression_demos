@@ -22,5 +22,5 @@
 
 #include <vector>
 
-std::vector<unsigned char> huffman_compress(const std::vector<unsigned char>& data_);
+std::vector<unsigned char> huffman_compress(const std::vector<unsigned char>& data_, bool compute_entropy_=false);
 std::vector<unsigned char> huffman_decompress(const std::vector<unsigned char>& data_);
